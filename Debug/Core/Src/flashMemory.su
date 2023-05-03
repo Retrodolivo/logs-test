@@ -1,0 +1,12 @@
+../Core/Src/flashMemory.c:6:6:flashUnlock	4	static
+../Core/Src/flashMemory.c:15:6:flashLock	4	static
+../Core/Src/flashMemory.c:23:9:flasReady	4	static
+../Core/Src/flashMemory.c:31:9:flasCheckEOP	4	static
+../Core/Src/flashMemory.c:44:9:flashErasePage	16	static
+../Core/Src/flashMemory.c:60:9:flashWriteWord	16	static
+../Core/Src/flashMemory.c:79:9:flashWrite_16	16	static
+../Core/Src/flashMemory.c:94:9:flashWriteDataWord	24	static
+../Core/Src/flashMemory.c:109:9:flashRead_8	16	static
+../Core/Src/flashMemory.c:117:10:flashRead_16	16	static
+../Core/Src/flashMemory.c:125:10:flashReadWord	16	static
+../Core/Src/flashMemory.c:133:6:flashReadDataWord	32	static

@@ -1,0 +1,9 @@
+../Core/Src/flashEEPROM.c:8:17:getStatePage	56	static
+../Core/Src/flashEEPROM.c:21:16:setStatePage	48	static
+../Core/Src/flashEEPROM.c:49:16:setStateData	24	static
+../Core/Src/flashEEPROM.c:77:10:searchNextData	32	static
+../Core/Src/flashEEPROM.c:99:9:copyDataPageToPage	448	static
+../Core/Src/flashEEPROM.c:179:9:flashEepromInit	24	static
+../Core/Src/flashEEPROM.c:232:9:flashEepromWriteData	40	static
+../Core/Src/flashEEPROM.c:391:9:flashEepromReadData	32	static
+../Core/Src/flashEEPROM.c:422:9:flashEepromDeleteData	32	static
