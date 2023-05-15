@@ -5,12 +5,17 @@
 #include "usbd_cdc_if.h"
 #include "logs.h"
 
+#define INDEX_PAGE_ADDR		0x08023000  /*start address of the last log record index page*/
+
 Logs_st logs;
 
 Flash_page_st page[PAGES];
 uint8_t start_page = 0;
 uint8_t end_page = 0;
 uint16_t bytes_in_page = 0x800;
+uint8_t index_page = 0;
+
+static void index_write(uint16_t val);
 
 /*sets flash boundaries for log data*/
 /*
@@ -36,7 +41,7 @@ uint8_t logs_init(uint32_t start_addr, uint32_t end_addr)
 		page[i].end = page[i].start + bytes_in_page - 1;
 	}
 
-	/*find last used flash page by code. The next page would be the start of a log data storage
+	/*find last used flash page by main program code. The next page would be the start of a log data storage
 	 *The end of a log data storage would be the end_page.
 	 * */
 	for (uint8_t i = 0; i < PAGES; i++)
@@ -49,10 +54,17 @@ uint8_t logs_init(uint32_t start_addr, uint32_t end_addr)
 	}
 	for (uint8_t i = 0; i < PAGES; i++)
 	{
-		if(page[i].end >= end_addr)
+		if (page[i].end >= end_addr)
 		{
 			end_page = i;
 			break;
+		}
+	}
+	for (uint8_t i = 0; i < PAGES; i++)
+	{
+		if (page[i].start == INDEX_PAGE_ADDR)
+		{
+			index_page = i;
 		}
 	}
 	total_pages = (end_page - start_page) == 0 ? 1 : end_page - start_page;
@@ -101,11 +113,11 @@ void logs_write(Logs_st *logs)
 
 	}
 	flashWriteDataWord(data_start, (uint32_t *)logs, sizeof(Logs_st) / sizeof(uint32_t));
+	index_write((uint8_t)logs->index);
 	logs->index++;
 }
 
 
-//flashReadDataWord(ADDR_PAGE_MASTER_DATA, (uint32_t *)&masterData, sizeof(masterData) / sizeof(uint32_t));
 void logs_read(void)
 {
 	uint16_t records_in_page = bytes_in_page / sizeof(Logs_st);
@@ -125,6 +137,21 @@ void logs_read(void)
 	}
 }
 
-
+static void index_write(uint16_t val)
+{
+	static uint16_t step = 0;
+	flashErasePage(page[index_page].start);
+	if (page[index_page].start + step < page[index_page].end)
+	{
+		flashWrite_16(page[index_page].start + step, (uint16_t)val);
+		step += 2;
+	}
+	else
+	{
+		flashErasePage(page[index_page].start);
+		step = 0;
+//		flashWrite_16(page[index_page].start + step++, val);
+	}
+}
 
 

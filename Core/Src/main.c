@@ -112,10 +112,10 @@ int main(void)
   logs.card = 0x02020202;
   logs.action = 0x03;
   logs.cell = 4;
-//  for (uint32_t i = 0; i < 150; i++)
-//  {
-//	  logs_write(&logs);
-//  }
+  for (uint32_t i = 0; i < 150; i++)
+  {
+	  logs_write(&logs);
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -389,10 +389,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void CDC_ReceiveCallBack()
-{
-	logs_read();
-}
+
 /* USER CODE END 4 */
 
 /**
