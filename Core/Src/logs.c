@@ -5,32 +5,26 @@
 #include "usbd_cdc_if.h"
 #include "logs.h"
 
-#define INDEX_PAGE_ADDR		0x08023000  /*start address of the last log record index page*/
-
 Logs_st logs;
 
-Flash_page_st page[PAGES];
-uint8_t start_page = 0;
-uint8_t end_page = 0;
-uint16_t bytes_in_page = 0x800;
-uint8_t index_page = 0;
-
-static void index_write(uint16_t val);
+static Flash_page_st page[PAGES];
+static uint8_t start_page = 0;
+static uint8_t end_page = 0;
+static const uint16_t bytes_in_page = 0x800;
+static uint8_t index_page = 0;
+static uint16_t offset = 0;
+static void context_record(uint16_t ind, uint16_t off);
+static void get_context(uint16_t *index, uint16_t *offset);
 
 /*sets flash boundaries for log data*/
 /*
- * arg[0] - put down an address of last used address of code. Function will choose the very next page for writing log data
- * arg[1] - put down an address. Function will choose the previous page.
+ * arg[0] - put down an address of last used address of code. Function will choose the very next page for context savings(needed after reset).
+ * The next from that point would be writing log data start page.
+ * arg[1] - put down an end address.
  * */
 uint8_t logs_init(uint32_t start_addr, uint32_t end_addr)
 {
 	uint8_t total_pages = 0;
-
-	logs.action = NO_ACTION;
-	logs.timestamp = 0;
-	logs.card = 0;
-	logs.cell = 0;
-	logs.index = 0;
 
 	page[0].start = 0x08000000;
 	page[0].end = 0x080007FF;
@@ -48,7 +42,8 @@ uint8_t logs_init(uint32_t start_addr, uint32_t end_addr)
 	{
 		if (page[i].start >= start_addr)
 		{
-			start_page = i;
+			index_page = i;
+			start_page = i + 1;
 			break;
 		}
 	}
@@ -60,21 +55,21 @@ uint8_t logs_init(uint32_t start_addr, uint32_t end_addr)
 			break;
 		}
 	}
-	for (uint8_t i = 0; i < PAGES; i++)
-	{
-		if (page[i].start == INDEX_PAGE_ADDR)
-		{
-			index_page = i;
-		}
-	}
+
+	logs.action = NO_ACTION;
+	logs.timestamp = 0;
+	logs.card = 0;
+	logs.cell = 0;
+	/*retrieve context after reset*/
+	get_context(&logs.index, &offset);
+
 	total_pages = (end_page - start_page) == 0 ? 1 : end_page - start_page;
 	return total_pages;
 }
 
-uint32_t offset = 0;
-uint8_t current_page = 0;
 
-/*Cycle writing mode. When there is no room for write new data, it's going from the start of the log data storage erased page before that*/
+uint8_t current_page = 0;
+/*Cycle writing mode. When there is no room for write new data, it's going from the start of the log data storage, erased page before that*/
 void logs_write(Logs_st *logs)
 {
 	uint32_t data_start = page[start_page].start + (sizeof(Logs_st) * logs->index) + offset;
@@ -113,10 +108,8 @@ void logs_write(Logs_st *logs)
 
 	}
 	flashWriteDataWord(data_start, (uint32_t *)logs, sizeof(Logs_st) / sizeof(uint32_t));
-	index_write((uint8_t)logs->index);
-	logs->index++;
+	context_record(logs->index++, offset);
 }
-
 
 void logs_read(void)
 {
@@ -137,21 +130,57 @@ void logs_read(void)
 	}
 }
 
-static void index_write(uint16_t val)
+/*duplicates value of log data index and offset to page[index_page]*/
+static const uint16_t records_in_page = bytes_in_page / sizeof(uint32_t);
+static void context_record(uint16_t index, uint16_t offset)
 {
 	static uint16_t step = 0;
-	flashErasePage(page[index_page].start);
-	if (page[index_page].start + step < page[index_page].end)
+	if (step == 0)
 	{
-		flashWrite_16(page[index_page].start + step, (uint16_t)val);
-		step += 2;
+		flashErasePage(page[index_page].start);
+	}
+	struct
+	{
+		uint16_t off;
+		uint16_t ind;
+	}context;
+	context.ind = index;
+	context.off = offset;
+
+	if (step < records_in_page)
+	{
+		/*make records template as 'XXXXYYYY, where XXXX(upper) - uint16_t index and YYYY(lower) - uint16_t offset*/
+		flashWriteDataWord(page[index_page].start + 4 * step++, (uint32_t *)&context, sizeof(context) / sizeof(uint32_t));
 	}
 	else
 	{
 		flashErasePage(page[index_page].start);
 		step = 0;
-//		flashWrite_16(page[index_page].start + step++, val);
+		flashWriteDataWord(page[index_page].start + 4 * step++, (uint32_t *)&context, sizeof(context) / sizeof(uint32_t));
 	}
 }
 
+static void get_context(uint16_t *index, uint16_t *offset)
+{
+	uint32_t ret = 0;
+	for (uint16_t i = records_in_page - 1; i > 0; i--)
+	{
+		if (flashReadWord(page[index_page].start + i * sizeof(uint32_t) - 4) != 0xFFFFFFFF)
+		{
+			ret = (uint32_t)flashReadWord(page[index_page].start + i * sizeof(uint32_t) - 4);
+			break;
+		}
+	}
+	/*return value of the NEXT index*/
+	if (ret > 0)
+	{
+		*index = (uint16_t)(ret >> 16) + 1;
+		*offset = (uint16_t)ret;
+	}
+	else
+	{
+		*index = 0;
+		*offset = 0;
+	}
+}
 

@@ -112,7 +112,7 @@ int main(void)
   logs.card = 0x02020202;
   logs.action = 0x03;
   logs.cell = 4;
-  for (uint32_t i = 0; i < 150; i++)
+  for (uint32_t i = 0; i < 700; i++)
   {
 	  logs_write(&logs);
   }
