@@ -31,7 +31,7 @@ typedef struct
 } Flash_page_st;
 
 
-uint8_t logs_init(uint32_t start_addr, uint32_t end_addr);
+void logs_init(uint32_t start_addr, uint32_t end_addr);
 void logs_write(Logs_st *logs);
 void logs_read(void);
 

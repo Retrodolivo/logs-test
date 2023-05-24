@@ -8,6 +8,8 @@
 Logs_st logs;
 
 static Flash_page_st page[PAGES];
+/*in total_pages do not include end page*/
+static uint8_t total_pages = 0;
 static uint8_t start_page = 0;
 static uint8_t end_page = 0;
 static const uint16_t bytes_in_page = 0x800;
@@ -16,15 +18,19 @@ static uint16_t offset = 0;
 static void context_record(uint16_t ind, uint16_t off);
 static void get_context(uint16_t *index, uint16_t *offset);
 
+static void u32_to_u8arr(uint32_t u32, uint8_t *u8);
+static void arr8_tx(uint8_t *arr, uint16_t len);
+
+
 /*sets flash boundaries for log data*/
 /*
  * arg[0] - put down an address of last used address of code. Function will choose the very next page for context savings(needed after reset).
  * The next from that point would be writing log data start page.
  * arg[1] - put down an end address.
  * */
-uint8_t logs_init(uint32_t start_addr, uint32_t end_addr)
+void logs_init(uint32_t start_addr, uint32_t end_addr)
 {
-	uint8_t total_pages = 0;
+
 
 	page[0].start = 0x08000000;
 	page[0].end = 0x080007FF;
@@ -64,7 +70,7 @@ uint8_t logs_init(uint32_t start_addr, uint32_t end_addr)
 	get_context(&logs.index, &offset);
 
 	total_pages = (end_page - start_page) == 0 ? 1 : end_page - start_page;
-	return total_pages;
+
 }
 
 
@@ -113,21 +119,46 @@ void logs_write(Logs_st *logs)
 
 void logs_read(void)
 {
+	CDC_Transmit_FS(&total_pages, 1);
+	HAL_Delay(1);
 	uint16_t records_in_page = bytes_in_page / sizeof(Logs_st);
-	uint8_t record[sizeof(Logs_st)];
-	memset(record, 0, sizeof(Logs_st));
+
+	uint32_t record32[sizeof(Logs_st) / sizeof(uint32_t)];
+	memset(record32, 0, sizeof(record32) / sizeof(record32[0]));
+
+	uint8_t record8[sizeof(uint32_t)];
+	memset(record8, 0, sizeof(record8) / sizeof(record8[0]));
 
 	for (uint8_t i = start_page; i < end_page; i++)
 	{
 		for (uint16_t j = 0; j < records_in_page; j++)
 		{
-			for (uint8_t k = 0; k < sizeof(Logs_st); k++)
+			flashReadDataWord(page[i].start + sizeof(Logs_st) * j, record32, sizeof(record32) / sizeof(record32[0]));
+			for (uint8_t k = 0; k < sizeof(Logs_st) / sizeof(uint32_t); k++)
 			{
-				record[k] = flashRead_8(page[i].start + j * sizeof(Logs_st) + k);
+				u32_to_u8arr(record32[k], record8);
+				arr8_tx(record8, sizeof(record8));
 			}
-			CDC_Transmit_FS(record, sizeof(record));
 		}
 	}
+}
+
+static void u32_to_u8arr(uint32_t u32, uint8_t *u8)
+{
+	for(uint8_t i = 0; i < sizeof(u32); i++)
+	{
+		u8[i] = u32 >> 8 * i;
+	}
+}
+static void arr8_tx(uint8_t *arr, uint16_t len)
+{
+	for (uint16_t i = 0; i < len; i++)
+	{
+		CDC_Transmit_FS(&arr[i], 1);
+		/*Delay is necessary, unfortunately :(*/
+		HAL_Delay(1);
+	}
+
 }
 
 /*duplicates value of log data index and offset to page[index_page]*/
@@ -183,4 +214,3 @@ static void get_context(uint16_t *index, uint16_t *offset)
 		*offset = 0;
 	}
 }
-

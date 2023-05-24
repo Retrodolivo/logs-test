@@ -27,6 +27,7 @@
 #include "rtc.h"
 #include "usbd_cdc_if.h"
 #include "logs.h"
+#include "nfc_hid.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -71,6 +72,8 @@ extern Logs_st logs;
 extern RTC_TimeTypeDef Time;
 extern RTC_DateTypeDef Date;
 
+Card_st card;
+
 uint8_t buffer[64];
 /* USER CODE END 0 */
 
@@ -108,14 +111,16 @@ int main(void)
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
   logs_init(0x0802328F, 0x0803E800);
-  logs.timestamp = 0x01010101;
-  logs.card = 0x02020202;
-  logs.action = 0x03;
+  logs.timestamp = RTC_ToEpoch(&Time, &Date);
+  logs.card = 0x12345678;
+  logs.action = LOCK_IDLE;
   logs.cell = 4;
-  for (uint32_t i = 0; i < 700; i++)
-  {
-	  logs_write(&logs);
-  }
+//  for (uint32_t i = 0; i < 9010; i++)
+//  {
+//	  logs.timestamp++;
+//	  logs_write(&logs);
+//  }
+//  nfcStartRun();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -125,12 +130,15 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+//	taskNfc();
+//	HAL_Delay(200);
+
+
 	if (strcmp((char *)buffer, "logs") == 0)
 	{
-	  logs_read();
-	  memset (buffer, '\0', 64);
+		logs_read();
+		memset (buffer, '\0', 64);
 	}
-
   }
   /* USER CODE END 3 */
 }
@@ -281,19 +289,19 @@ static void MX_RTC_Init(void)
   sTime.Seconds = 0;
   sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
   sTime.StoreOperation = RTC_STOREOPERATION_RESET;
-//  if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
+  if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN) != HAL_OK)
+  {
+    Error_Handler();
+  }
   sDate.WeekDay = RTC_WEEKDAY_MONDAY;
   sDate.Month = RTC_MONTH_AUGUST;
   sDate.Date = 1;
   sDate.Year = 23;
 
-//  if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
+  if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN) != HAL_OK)
+  {
+    Error_Handler();
+  }
   /* USER CODE BEGIN RTC_Init 2 */
 
   /* USER CODE END RTC_Init 2 */
@@ -354,6 +362,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
@@ -361,10 +370,8 @@ static void MX_GPIO_Init(void)
                           |LD7_Pin|LD9_Pin|LD10_Pin|LD8_Pin
                           |LD6_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : DRDY_Pin MEMS_INT3_Pin MEMS_INT4_Pin MEMS_INT1_Pin
-                           MEMS_INT2_Pin */
-  GPIO_InitStruct.Pin = DRDY_Pin|MEMS_INT3_Pin|MEMS_INT4_Pin|MEMS_INT1_Pin
-                          |MEMS_INT2_Pin;
+  /*Configure GPIO pins : DRDY_Pin MEMS_INT4_Pin MEMS_INT1_Pin MEMS_INT2_Pin */
+  GPIO_InitStruct.Pin = DRDY_Pin|MEMS_INT4_Pin|MEMS_INT1_Pin|MEMS_INT2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_EVT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
@@ -385,6 +392,25 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : DATA1_Pin */
+  GPIO_InitStruct.Pin = DATA1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(DATA1_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : DATA0_Pin */
+  GPIO_InitStruct.Pin = DATA0_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(DATA0_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
 }
 

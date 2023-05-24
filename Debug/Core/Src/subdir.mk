@@ -7,8 +7,10 @@
 C_SRCS += \
 ../Core/Src/flashEEPROM.c \
 ../Core/Src/flashMemory.c \
+../Core/Src/hid.c \
 ../Core/Src/logs.c \
 ../Core/Src/main.c \
+../Core/Src/nfc_hid.c \
 ../Core/Src/rtc.c \
 ../Core/Src/stm32f3xx_hal_msp.c \
 ../Core/Src/stm32f3xx_it.c \
@@ -19,8 +21,10 @@ C_SRCS += \
 OBJS += \
 ./Core/Src/flashEEPROM.o \
 ./Core/Src/flashMemory.o \
+./Core/Src/hid.o \
 ./Core/Src/logs.o \
 ./Core/Src/main.o \
+./Core/Src/nfc_hid.o \
 ./Core/Src/rtc.o \
 ./Core/Src/stm32f3xx_hal_msp.o \
 ./Core/Src/stm32f3xx_it.o \
@@ -31,8 +35,10 @@ OBJS += \
 C_DEPS += \
 ./Core/Src/flashEEPROM.d \
 ./Core/Src/flashMemory.d \
+./Core/Src/hid.d \
 ./Core/Src/logs.d \
 ./Core/Src/main.d \
+./Core/Src/nfc_hid.d \
 ./Core/Src/rtc.d \
 ./Core/Src/stm32f3xx_hal_msp.d \
 ./Core/Src/stm32f3xx_it.d \
@@ -48,7 +54,7 @@ Core/Src/%.o Core/Src/%.su: ../Core/Src/%.c Core/Src/subdir.mk
 clean: clean-Core-2f-Src
 
 clean-Core-2f-Src:
-	-$(RM) ./Core/Src/flashEEPROM.d ./Core/Src/flashEEPROM.o ./Core/Src/flashEEPROM.su ./Core/Src/flashMemory.d ./Core/Src/flashMemory.o ./Core/Src/flashMemory.su ./Core/Src/logs.d ./Core/Src/logs.o ./Core/Src/logs.su ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/main.su ./Core/Src/rtc.d ./Core/Src/rtc.o ./Core/Src/rtc.su ./Core/Src/stm32f3xx_hal_msp.d ./Core/Src/stm32f3xx_hal_msp.o ./Core/Src/stm32f3xx_hal_msp.su ./Core/Src/stm32f3xx_it.d ./Core/Src/stm32f3xx_it.o ./Core/Src/stm32f3xx_it.su ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/syscalls.su ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/sysmem.su ./Core/Src/system_stm32f3xx.d ./Core/Src/system_stm32f3xx.o ./Core/Src/system_stm32f3xx.su
+	-$(RM) ./Core/Src/flashEEPROM.d ./Core/Src/flashEEPROM.o ./Core/Src/flashEEPROM.su ./Core/Src/flashMemory.d ./Core/Src/flashMemory.o ./Core/Src/flashMemory.su ./Core/Src/hid.d ./Core/Src/hid.o ./Core/Src/hid.su ./Core/Src/logs.d ./Core/Src/logs.o ./Core/Src/logs.su ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/main.su ./Core/Src/nfc_hid.d ./Core/Src/nfc_hid.o ./Core/Src/nfc_hid.su ./Core/Src/rtc.d ./Core/Src/rtc.o ./Core/Src/rtc.su ./Core/Src/stm32f3xx_hal_msp.d ./Core/Src/stm32f3xx_hal_msp.o ./Core/Src/stm32f3xx_hal_msp.su ./Core/Src/stm32f3xx_it.d ./Core/Src/stm32f3xx_it.o ./Core/Src/stm32f3xx_it.su ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/syscalls.su ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/sysmem.su ./Core/Src/system_stm32f3xx.d ./Core/Src/system_stm32f3xx.o ./Core/Src/system_stm32f3xx.su
 
 .PHONY: clean-Core-2f-Src
 
